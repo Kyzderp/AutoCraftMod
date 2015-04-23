@@ -82,11 +82,26 @@ public class AutoInventory
 						found = true;
 						break;
 					}
-				} // TODO: spread out the items that are left?
-				if (!found)
-				{
-					System.out.println("Could not find item ID " + stored[i] + ":" + meta[i]);
-					return;
+				}
+				if (!found) // can't find more in the inventory
+				{// i is the slot it should go in
+					for (int j = 1; j <=4; j++) // search the crafting matrix for extras
+					{
+						ItemStack curr = ((Slot)this.inv.inventorySlots.get(j)).getStack();
+						if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
+								&& curr.getItemDamage() == meta[i]) // found the right item
+						{
+							this.rightClick(j);
+							this.click(i+1); // move it to appropriate slot
+							found = true;
+							break;
+						}
+					}
+					if (!found)
+					{
+						System.out.println("Could not find item ID " + stored[i] + ":" + meta[i]);
+						return;
+					}
 				}
 			}
 		}
@@ -105,6 +120,12 @@ public class AutoInventory
 	{
 		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
 				slot, 0, 0, Minecraft.getMinecraft().thePlayer);
+	}
+
+	private void rightClick(int slot)
+	{
+		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+				slot, 1, 0, Minecraft.getMinecraft().thePlayer);
 	}
 
 	/* Action values (from invtweaks):
