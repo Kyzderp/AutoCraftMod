@@ -8,6 +8,7 @@ import com.mumfrey.liteloader.JoinGameListener;
 import com.mumfrey.liteloader.Tickable;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.inventory.GuiCrafting;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.network.INetHandler;
 import net.minecraft.network.play.server.S01PacketJoinGame;
@@ -18,6 +19,7 @@ import net.minecraft.util.EnumChatFormatting;
 public class LiteModAutoCraft implements Tickable, JoinGameListener
 {
 	private AutoInventory autoInv;
+	private AutoWorkbench autoBench;
 
 	@Override
 	public String getName() {return "AutoCraft";}
@@ -38,7 +40,6 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 	{
 		// TODO: which key to use?
 		if (inGame && minecraft.thePlayer.openContainer != null
-				&& minecraft.thePlayer.openContainer.equals(minecraft.thePlayer.inventoryContainer)
 				&& minecraft.currentScreen instanceof GuiInventory)
 		{
 //			System.out.println("Opened inventory");
@@ -50,13 +51,25 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 					this.autoInv.craft();
 			}
 		}
-
+		else if (inGame && minecraft.thePlayer.openContainer != null
+				&& minecraft.currentScreen instanceof GuiCrafting)
+		{
+			if (Keyboard.isKeyDown(Keyboard.KEY_RETURN))
+			{
+				if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT))
+					this.autoBench.storeCrafting();
+				else
+					this.autoBench.craft();
+			}
+		}
+		// TODO: grab correct proportions of items from containers?
 	}
 	
 	@Override
 	public void onJoinGame(INetHandler netHandler, S01PacketJoinGame joinGamePacket) 
 	{
 		this.autoInv = new AutoInventory();
+		this.autoBench = new AutoWorkbench();
 	}
 	
 	/**

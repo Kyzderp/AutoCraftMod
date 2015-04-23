@@ -44,6 +44,7 @@ public class AutoInventory
 			}
 		}
 		System.out.println("Finished storing.");
+		// TODO: error for invalid recipe (crafting output is empty)
 	}
 
 	public void craft()
