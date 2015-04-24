@@ -14,13 +14,15 @@ public class AutoInventory
 	private ContainerPlayer inv;
 	private int[] stored;
 	private int[] meta;
+	private LiteModAutoCraft main;
 
 
-	public AutoInventory()
+	public AutoInventory(LiteModAutoCraft main)
 	{
 		this.inv = (ContainerPlayer) Minecraft.getMinecraft().thePlayer.inventoryContainer;
 		this.stored = new int[4];
 		this.meta = new int[4];
+		this.main = main;
 	}
 
 	public void storeCrafting()
@@ -34,7 +36,6 @@ public class AutoInventory
 				{
 					stored[i] = Item.getIdFromItem(stack.getItem());
 					meta[i] = stack.getItemDamage();
-					System.out.println((i+1) + ": " + stored[i] + " " + meta[i]);
 				}
 				else // nothing in the slot
 				{
@@ -43,7 +44,7 @@ public class AutoInventory
 				}
 			}
 		}
-		System.out.println("Finished storing.");
+		this.main.message("Stored current crafting recipe.", false);
 		// TODO: error for invalid recipe (crafting output is empty)
 	}
 
@@ -89,7 +90,7 @@ public class AutoInventory
 					{
 						ItemStack curr = ((Slot)this.inv.inventorySlots.get(j)).getStack();
 						if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
-								&& curr.getItemDamage() == meta[i]) // found the right item
+								&& curr.getItemDamage() == meta[i] && curr.stackSize > 1) // found the right item
 						{
 							this.rightClick(j);
 							this.click(i+1); // move it to appropriate slot
@@ -99,14 +100,13 @@ public class AutoInventory
 					}
 					if (!found)
 					{
-						System.out.println("Could not find item ID " + stored[i] + ":" + meta[i]);
+						this.main.message("Could not find item ID " + stored[i] + ":" + meta[i], true);
 						return;
 					}
 				}
 			}
 		}
 		this.shiftClick(0);
-		System.out.println("Finished crafting.");
 	}
 
 

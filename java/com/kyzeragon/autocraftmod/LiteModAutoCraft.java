@@ -8,6 +8,7 @@ import com.mumfrey.liteloader.JoinGameListener;
 import com.mumfrey.liteloader.Tickable;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.inventory.GuiCrafting;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.network.INetHandler;
@@ -20,16 +21,20 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 {
 	private AutoInventory autoInv;
 	private AutoWorkbench autoBench;
+	private int cooldown;
+	private String message;
+	private boolean isError;
 
 	@Override
 	public String getName() {return "AutoCraft";}
 
 	@Override
-	public String getVersion() {return "0.9.0";}
+	public String getVersion() {return "1.0.0";}
 
 	@Override
 	public void init(File configPath) 
 	{
+		this.cooldown = 20;
 	}
 
 	@Override
@@ -38,11 +43,14 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 	@Override
 	public void onTick(Minecraft minecraft, float partialTicks, boolean inGame, boolean clock) 
 	{
-		// TODO: which key to use?
+		if (this.cooldown > 0)
+		{
+			this.cooldown--;
+			this.displayMessage(this.message, this.isError);
+		}
 		if (inGame && minecraft.thePlayer.openContainer != null
 				&& minecraft.currentScreen instanceof GuiInventory)
 		{
-//			System.out.println("Opened inventory");
 			if (Keyboard.isKeyDown(Keyboard.KEY_RETURN))
 			{
 				if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT))
@@ -70,8 +78,26 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 	@Override
 	public void onJoinGame(INetHandler netHandler, S01PacketJoinGame joinGamePacket) 
 	{
-		this.autoInv = new AutoInventory();
-		this.autoBench = new AutoWorkbench();
+		this.autoInv = new AutoInventory(this);
+		this.autoBench = new AutoWorkbench(this);
+	}
+	
+	public void message(String message, boolean isError)
+	{
+		this.message = message;
+		this.isError = isError;
+		this.cooldown = 20;
+	}
+	
+	private void displayMessage(String message, boolean isError)
+	{
+		int color = 0xFF5555;
+		if (!isError)
+			color = 0x55FF55;
+		FontRenderer fontRender = Minecraft.getMinecraft().fontRenderer;
+		fontRender.drawStringWithShadow(message, 
+				Minecraft.getMinecraft().displayWidth/4 - fontRender.getStringWidth(message)/2, 
+				Minecraft.getMinecraft().displayHeight/4 - 100, color);
 	}
 	
 	/**
