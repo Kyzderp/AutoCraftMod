@@ -98,7 +98,9 @@ public class AutoWorkbench
 					}
 					if (!found)
 					{
-						this.main.message("Could not find item ID " + stored[i] + ":" + meta[i], true);
+						ItemStack displayStack = new ItemStack(Item.getItemById(stored[i]));
+						displayStack.setItemDamage(meta[i]);
+						this.main.message("Insufficient material: " + displayStack.getDisplayName(), true); 
 						return;
 					}
 				}

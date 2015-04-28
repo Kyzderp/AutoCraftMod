@@ -72,7 +72,8 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 		}
 		// TODO: grab correct proportions of items from containers?
 		// TODO: craft 1 at a time with ctrl+enter?
-		// TODO: display error on top of screen
+		// TODO: delay
+		// TODO: auto-combine stuff like armor, must calculate best proportion
 	}
 	
 	@Override
