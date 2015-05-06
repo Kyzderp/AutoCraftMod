@@ -26,7 +26,7 @@ public class AutoInventory
 		this.main = main;
 		this.durabilityRepair = 0;
 	}
-	
+
 
 	/**
 	 * Stores the crafting matrix if the crafting output is valid
@@ -52,9 +52,9 @@ public class AutoInventory
 					if (Item.getIdFromItem(curr) != this.durabilityRepair || !curr.isDamageable())
 					{
 						this.durabilityRepair = 0;
-						stored[i] = Item.getIdFromItem(curr);
-						meta[i] = stack.getItemDamage();
 					}
+					stored[i] = Item.getIdFromItem(curr);
+					meta[i] = stack.getItemDamage();
 				}
 				else // nothing in the slot 
 				{
@@ -197,7 +197,7 @@ public class AutoInventory
 		this.shiftClick(0);
 	}
 
-	
+
 	class DurabilityComparator implements Comparator
 	{
 		@Override
