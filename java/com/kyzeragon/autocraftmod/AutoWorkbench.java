@@ -16,8 +16,9 @@ public class AutoWorkbench
 
 	public AutoWorkbench(LiteModAutoCraft main)
 	{
-		this.stored = new int[9];
-		this.meta = new int[9];
+		int[] zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0}; 
+		this.stored = zeros;
+		this.meta = zeros;
 		this.main = main;
 	}
 
@@ -47,6 +48,11 @@ public class AutoWorkbench
 
 	public void craft()
 	{
+		int n = 0;
+		for (int i = 0; i < 9; i++)
+			n += stored[i];
+		if (n == 0)
+			return;
 		this.inv = (ContainerWorkbench)Minecraft.getMinecraft().thePlayer.openContainer;
 		for (int i = 0; i < 9; i++)
 		{

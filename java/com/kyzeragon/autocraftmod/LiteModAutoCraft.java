@@ -2,39 +2,46 @@ package com.kyzeragon.autocraftmod;
 
 import java.io.File;
 
-import org.lwjgl.input.Keyboard;
-
-import com.mumfrey.liteloader.JoinGameListener;
-import com.mumfrey.liteloader.Tickable;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.inventory.GuiCrafting;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.network.INetHandler;
+import net.minecraft.network.play.client.C01PacketChatMessage;
 import net.minecraft.network.play.server.S01PacketJoinGame;
+import net.minecraft.network.play.server.S02PacketChat;
 import net.minecraft.util.ChatComponentText;
 import net.minecraft.util.ChatStyle;
 import net.minecraft.util.EnumChatFormatting;
+import net.minecraft.util.IChatComponent;
 
-public class LiteModAutoCraft implements Tickable, JoinGameListener
+import org.lwjgl.input.Keyboard;
+
+import com.mumfrey.liteloader.ChatFilter;
+import com.mumfrey.liteloader.JoinGameListener;
+import com.mumfrey.liteloader.OutboundChatListener;
+import com.mumfrey.liteloader.Tickable;
+
+public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundChatListener, ChatFilter
 {
 	private AutoInventory autoInv;
 	private AutoWorkbench autoBench;
 	private int cooldown;
 	private String message;
 	private boolean isError;
+	private boolean sentCmd;
 
 	@Override
 	public String getName() {return "AutoCraft";}
 
 	@Override
-	public String getVersion() {return "1.0.0";}
+	public String getVersion() {return "1.1.0";}
 
 	@Override
 	public void init(File configPath) 
 	{
 		this.cooldown = 20;
+		this.sentCmd = false;
 	}
 
 	@Override
@@ -74,6 +81,32 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 		// TODO: craft 1 at a time with ctrl+enter?
 		// TODO: delay
 		// TODO: auto-combine stuff like armor, must calculate best proportion
+	}
+	
+	@Override
+	public void onSendChatMessage(C01PacketChatMessage packet, String message) 
+	{
+		String[] tokens = message.split(" ");
+		if (tokens[0].equalsIgnoreCase("/ac") || tokens[0].equalsIgnoreCase("/autocraft"))
+		{
+			this.sentCmd = true;
+			if (tokens.length == 1)
+			{
+				this.logMessage("§2" + this.getName() + " §8[§2v" + this.getVersion() + "§8] §aby Kyzeragon", false);
+				this.logMessage("Type §2/ac help $afor commands.", false);
+			}
+		}
+	}
+	
+	@Override
+	public boolean onChat(S02PacketChat chatPacket, IChatComponent chat, String message) 
+	{
+		if (message.matches(".*nknown.*ommand.*") && this.sentCmd)
+		{
+			this.sentCmd = false;
+			return false;
+		}
+		return true;
 	}
 	
 	@Override
@@ -125,6 +158,4 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener
 		displayMessage.setChatStyle((new ChatStyle()).setColor(EnumChatFormatting.RED));
 		Minecraft.getMinecraft().thePlayer.addChatComponentMessage(displayMessage);
 	}
-
-
 }
