@@ -21,9 +21,8 @@ public class AutoInventory
 	public AutoInventory(LiteModAutoCraft main)
 	{
 		this.inv = (ContainerPlayer) Minecraft.getMinecraft().thePlayer.inventoryContainer;
-		int[] zeros = {0, 0, 0, 0};
-		this.stored = zeros;
-		this.meta = zeros;
+		this.stored = new int[4];
+		this.meta = new int[4];
 		this.main = main;
 		this.durabilityRepair = 0;
 	}
@@ -59,8 +58,8 @@ public class AutoInventory
 				}
 				else // nothing in the slot 
 				{
-					stored[i] = -1;
-					meta[i] = -1;
+					stored[i] = 0;
+					meta[i] = 0;
 				}
 			}
 		}
@@ -146,14 +145,14 @@ public class AutoInventory
 					int currMeta = stack.getItemDamage();
 					if (currID == stored[i] && currMeta == meta[i])
 						continue; // correct item in slot
-					else if (stored[i] == -1) // there's something when there shouldn't be
+					else if (stored[i] == 0) // there's something when there shouldn't be
 					{
 						this.shiftClick(i+1);
 						continue;
 					}
 				}
 
-				if (stored[i] == -1)
+				if (stored[i] == 0)
 					continue;
 				this.shiftClick(i+1); // empty the slot, could already be empty but watevzzz \o/
 				boolean found = false;

@@ -16,15 +16,20 @@ public class AutoWorkbench
 
 	public AutoWorkbench(LiteModAutoCraft main)
 	{
-		int[] zeros = {0, 0, 0, 0, 0, 0, 0, 0, 0}; 
-		this.stored = zeros;
-		this.meta = zeros;
+		this.stored = new int[9];
+		this.meta = new int[9];
 		this.main = main;
 	}
 
 	public void storeCrafting()
 	{
 		this.inv = (ContainerWorkbench)Minecraft.getMinecraft().thePlayer.openContainer;
+		if (!((Slot)this.inv.inventorySlots.get(0)).getHasStack())
+		{ // Nothing in crafting output
+			this.main.message("Invalid crafting recipe!", true);
+			return;
+		}
+		ItemStack result = ((Slot)this.inv.inventorySlots.get(0)).getStack();
 		for (int i = 0; i < 9; i++)
 		{
 			if (this.inv.inventorySlots.get(i+1) != null)
@@ -32,27 +37,26 @@ public class AutoWorkbench
 				ItemStack stack = ((Slot)this.inv.inventorySlots.get(i+1)).getStack();
 				if (stack != null)
 				{
-					stored[i] = Item.getIdFromItem(stack.getItem());
-					meta[i] = stack.getItemDamage();
+					this.stored[i] = Item.getIdFromItem(stack.getItem());
+					this.meta[i] = stack.getItemDamage();
 				}
 				else // nothing in the slot
 				{
-					stored[i] = -1;
-					meta[i] = -1;
+					this.stored[i] = 0;
+					this.meta[i] = 0;
 				}
 			}
 		}
-		this.main.message("Stored current crafting recipe.", false);
+		this.main.message("Stored crafting recipe for "	+ result.getDisplayName(), false);
 		// TODO: error for invalid recipe (crafting output is empty)
 	}
 
 	public void craft()
 	{
 		int n = 0;
-		for (int i = 0; i < 9; i++)
-			n += stored[i];
-		if (n == 0)
-			return;
+		for (int i = 0; i < 9; i++) n += this.stored[i];
+		if (n == 0)	return;
+		
 		this.inv = (ContainerWorkbench)Minecraft.getMinecraft().thePlayer.openContainer;
 		for (int i = 0; i < 9; i++)
 		{
@@ -65,14 +69,14 @@ public class AutoWorkbench
 					int currMeta = stack.getItemDamage();
 					if (currID == stored[i] && currMeta == meta[i])
 						continue; // correct item in slot
-					else if (stored[i] == -1) // there's something when there shouldn't be
+					else if (stored[i] == 0) // there's something when there shouldn't be
 					{
 						this.shiftClick(i+1);
 						continue;
 					}
 				}
 
-				if (stored[i] == -1)
+				if (stored[i] == 0)
 					continue;
 				this.shiftClick(i+1); // empty the slot, could already be empty but watevzzz \o/
 				boolean found = false;
@@ -102,10 +106,12 @@ public class AutoWorkbench
 							break;
 						}
 					}
-					if (!found)
+					if (!found) // cannot find, clear crafting matrix
 					{
 						ItemStack displayStack = new ItemStack(Item.getItemById(stored[i]));
 						displayStack.setItemDamage(meta[i]);
+						for (int k = 1; k <= 9; k++)
+							this.shiftClick(k);
 						this.main.message("Insufficient material: " + displayStack.getDisplayName(), true); 
 						return;
 					}
