@@ -78,7 +78,8 @@ public class AutoWorkbench
 
 				if (stored[i] == 0)
 					continue;
-				this.shiftClick(i+1); // empty the slot, could already be empty but watevzzz \o/
+				if (((Slot)this.inv.inventorySlots.get(i+1)).getHasStack())
+					this.shiftClick(i+1); // empty the slot, could already be empty but watevzzz \o/
 				boolean found = false;
 				for (int j = 10; j <= 45; j++) // search through inventory for matches
 				{
@@ -86,8 +87,8 @@ public class AutoWorkbench
 					if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
 							&& curr.getItemDamage() == meta[i]) // found the right item
 					{
-						this.click(j);
-						this.click(i+1); // move it to appropriate slot
+						this.click(j, true);
+						this.click(i+1, false); // move it to appropriate slot
 						found = true;
 						break;
 					}
@@ -100,8 +101,8 @@ public class AutoWorkbench
 						if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
 								&& curr.getItemDamage() == meta[i] && curr.stackSize > 1) // found the right item
 						{
-							this.rightClick(j);
-							this.click(i+1); // move it to appropriate slot
+							this.rightClick(j, true);
+							this.click(i+1, false); // move it to appropriate slot
 							found = true;
 							break;
 						}
@@ -123,21 +124,24 @@ public class AutoWorkbench
 
 
 	private void shiftClick(int slot)
-	{//windowClick(int windowID, int slot, int data, int action, EntityPlayer par5EntityPlayer)
-		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-				slot, 0, 1, Minecraft.getMinecraft().thePlayer);
+	{
+//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+//				slot, 0, 1, Minecraft.getMinecraft().thePlayer);
+		this.main.queueClick(new Click(this.inv.windowId, slot, 0, 1, false));
 	}
 
-	private void click(int slot)
+	private void click(int slot, boolean doNext)
 	{
-		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-				slot, 0, 0, Minecraft.getMinecraft().thePlayer);
+//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+//				slot, 0, 0, Minecraft.getMinecraft().thePlayer);
+		this.main.queueClick(new Click(this.inv.windowId, slot, 0, 0, doNext));
 	}
-	
-	private void rightClick(int slot)
+
+	private void rightClick(int slot, boolean doNext)
 	{
-		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-				slot, 1, 0, Minecraft.getMinecraft().thePlayer);
+//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+//				slot, 1, 0, Minecraft.getMinecraft().thePlayer);
+		this.main.queueClick(new Click(this.inv.windowId, slot, 1, 0, doNext));
 	}
 
 	/* Action values (from invtweaks):

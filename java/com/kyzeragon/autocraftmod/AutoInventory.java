@@ -88,7 +88,8 @@ public class AutoInventory
 	private void repair()
 	{
 		for (int i = 1; i < 5; i++) // first clear out crafting matrix
-			this.shiftClick(i);
+			if (((Slot)this.inv.inventorySlots.get(i)).getHasStack())
+				this.shiftClick(i);
 		ArrayList<Slot> repairSlots = new ArrayList<Slot>();
 		Item toRepair = Item.getItemById(this.durabilityRepair);
 		for (int i = 9; i <= 44; i++) // Search inventory for all matching items
@@ -111,21 +112,21 @@ public class AutoInventory
 		Collections.sort(repairSlots, new DurabilityComparator());
 		int target = toRepair.getMaxDamage() - repairSlots.get(0).getStack().getItemDamage() 
 				+ toRepair.getMaxDamage() * 5 / 100;
-		this.click(repairSlots.get(0).slotNumber); // move largest damage to crafting grid
-		this.click(1);
+		this.click(repairSlots.get(0).slotNumber, true); // move largest damage to crafting grid
+		this.click(1, false);
 		for (int i = 1; i < repairSlots.size(); i++) // find the largest damage that can combine and make full
 		{
 			int durability = repairSlots.get(i).getStack().getItemDamage();
 			if (durability <= target)
 			{
-				this.click(repairSlots.get(i).slotNumber); // move to crafting grid
-				this.click(2);
+				this.click(repairSlots.get(i).slotNumber, true); // move to crafting grid
+				this.click(2, false);
 				this.shiftClick(0);
 				return;
 			}
 		}
-		this.click(repairSlots.get(1).slotNumber); // otherwise, take next smallest
-		this.click(2);
+		this.click(repairSlots.get(1).slotNumber, true); // otherwise, take next smallest
+		this.click(2, false);
 		this.shiftClick(0);
 	}
 
@@ -154,7 +155,8 @@ public class AutoInventory
 
 				if (stored[i] == 0)
 					continue;
-				this.shiftClick(i+1); // empty the slot, could already be empty but watevzzz \o/
+				if (((Slot)this.inv.inventorySlots.get(i+1)).getHasStack())
+					this.shiftClick(i+1); // empty the slot, could already be empty but watevzzz \o/
 				boolean found = false;
 				for (int j = 9; j <= 44; j++) // search through inventory for matches
 				{
@@ -162,8 +164,8 @@ public class AutoInventory
 					if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
 							&& curr.getItemDamage() == meta[i]) // found the right item
 					{
-						this.click(j);
-						this.click(i+1); // move it to appropriate slot
+						this.click(j, true);
+						this.click(i+1, false); // move it to appropriate slot
 						found = true;
 						break;
 					}
@@ -176,8 +178,8 @@ public class AutoInventory
 						if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
 								&& curr.getItemDamage() == meta[i] && curr.stackSize > 1) // found the right item
 						{
-							this.rightClick(j);
-							this.click(i+1); // move it to appropriate slot
+							this.rightClick(j, true);
+							this.click(i+1, false); // move it to appropriate slot
 							found = true;
 							break;
 						}
@@ -215,20 +217,23 @@ public class AutoInventory
 
 	private void shiftClick(int slot)
 	{
-		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-				slot, 0, 1, Minecraft.getMinecraft().thePlayer);
+//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+//				slot, 0, 1, Minecraft.getMinecraft().thePlayer);
+		this.main.queueClick(new Click(this.inv.windowId, slot, 0, 1, false));
 	}
 
-	private void click(int slot)
+	private void click(int slot, boolean doNext)
 	{
-		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-				slot, 0, 0, Minecraft.getMinecraft().thePlayer);
+//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+//				slot, 0, 0, Minecraft.getMinecraft().thePlayer);
+		this.main.queueClick(new Click(this.inv.windowId, slot, 0, 0, doNext));
 	}
 
-	private void rightClick(int slot)
+	private void rightClick(int slot, boolean doNext)
 	{
-		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-				slot, 1, 0, Minecraft.getMinecraft().thePlayer);
+//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+//				slot, 1, 0, Minecraft.getMinecraft().thePlayer);
+		this.main.queueClick(new Click(this.inv.windowId, slot, 1, 0, doNext));
 	}
 
 	/* Action values (from invtweaks):
