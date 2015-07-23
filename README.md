@@ -1,4 +1,4 @@
 # AutoCraftMod
-A Litemod to automate the crafting process
+A Litemod to semi-automate the crafting process
 
-Work in progress!
+See the wiki for usage and downloads! https://github.com/Kyzderp/AutoCraftMod/wiki
