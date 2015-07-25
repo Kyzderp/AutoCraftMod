@@ -23,4 +23,9 @@ public class Click
 		this.doNext = doNext;
 	}
 
+	@Override
+	public String toString()
+	{
+		return "window: " + windowID + " slot: " + slot;
+	}
 }

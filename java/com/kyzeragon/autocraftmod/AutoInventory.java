@@ -3,6 +3,8 @@ package com.kyzeragon.autocraftmod;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.inventory.ContainerPlayer;
@@ -15,14 +17,18 @@ public class AutoInventory
 	private ContainerPlayer inv;
 	private int[] stored;
 	private int[] meta;
+	private String output;
 	private LiteModAutoCraft main;
 	private int durabilityRepair;
+	private LinkedList<Click> toSend;
 
 	public AutoInventory(LiteModAutoCraft main)
 	{
 		this.inv = (ContainerPlayer) Minecraft.getMinecraft().thePlayer.inventoryContainer;
+		this.toSend = new LinkedList<Click>();
 		this.stored = new int[4];
 		this.meta = new int[4];
+		this.output = "";
 		this.main = main;
 		this.durabilityRepair = 0;
 	}
@@ -63,6 +69,7 @@ public class AutoInventory
 				}
 			}
 		}
+		this.output = result.getDisplayName();
 		this.main.message("Stored crafting recipe for "	+ result.getDisplayName(), false);
 	}
 
@@ -87,6 +94,7 @@ public class AutoInventory
 	 */
 	private void repair()
 	{
+		this.toSend.clear();
 		for (int i = 1; i < 5; i++) // first clear out crafting matrix
 			if (((Slot)this.inv.inventorySlots.get(i)).getHasStack())
 				this.shiftClick(i);
@@ -106,6 +114,8 @@ public class AutoInventory
 		{
 			this.main.message("Insufficient repair material: " 
 					+ new ItemStack(toRepair).getDisplayName(), true);
+			this.toSend.clear();
+			this.sendQueue();
 			return;
 		}
 		// Sort according to durability
@@ -122,12 +132,14 @@ public class AutoInventory
 				this.click(repairSlots.get(i).slotNumber, true); // move to crafting grid
 				this.click(2, false);
 				this.shiftClick(0);
+				this.sendQueue();
 				return;
 			}
 		}
 		this.click(repairSlots.get(1).slotNumber, true); // otherwise, take next smallest
 		this.click(2, false);
 		this.shiftClick(0);
+		this.sendQueue();
 	}
 
 	/**
@@ -135,6 +147,59 @@ public class AutoInventory
 	 */
 	private void craftNormal()
 	{
+		this.toSend.clear();
+		HashMap<String, Integer> needed = new HashMap<String, Integer>();
+		for (int i = 0; i < 4; i++)
+		{
+			if (this.stored[i] != 0)
+			{
+				Integer count = needed.get(stored[i] + ":" + meta[i]);
+				if (count == null)
+					needed.put(stored[i] + ":" + meta[i], 1);
+				else
+					needed.put(stored[i] + ":" + meta[i], count + 1);
+			}
+		}
+		for (int i = 1; i <= 44; i++)
+		{
+			if (i > 4 && i < 9)
+				continue;
+			if (((Slot)this.inv.inventorySlots.get(i)) == null)
+				continue;
+			ItemStack stack = ((Slot)this.inv.inventorySlots.get(i)).getStack();
+			if (stack == null)
+				continue;
+			String item = Item.getIdFromItem(stack.getItem()) + ":" + stack.getItemDamage();
+			Integer count = needed.get(item);
+			if (count == null)
+				continue;
+			else
+			{
+				if (stack.stackSize >= count)
+					needed.remove(item);
+				else
+					needed.put(item, count - stack.stackSize);
+			}
+			if (needed.size() == 0)
+				break;
+		}
+		
+		if (needed.size() > 0) // Not enough materials, exit immediately
+		{
+			String item = needed.keySet().iterator().next();
+			ItemStack displayStack = new ItemStack(Item.getItemById(Integer.parseInt(item.split(":")[0])));
+			displayStack.setItemDamage(Integer.parseInt(item.split(":")[1]));
+			this.toSend.clear();
+			for (int k = 1; k < 5; k++)
+				if (((Slot)this.inv.inventorySlots.get(k)).getHasStack())
+					this.shiftClick(k);
+			this.main.message("Insufficient material for " + this.output + ": " 
+					+ displayStack.getDisplayName(), true);
+			this.sendQueue();
+			return;
+		}
+		
+		String ignore = "-1";
 		for (int i = 0; i < 4; i++)
 		{
 			if (this.inv.inventorySlots.get(i+1) != null)
@@ -156,16 +221,19 @@ public class AutoInventory
 				if (stored[i] == 0)
 					continue;
 				if (((Slot)this.inv.inventorySlots.get(i+1)).getHasStack())
-					this.shiftClick(i+1); // empty the slot, could already be empty but watevzzz \o/
+					this.shiftClick(i+1); // empty the slot
 				boolean found = false;
 				for (int j = 9; j <= 44; j++) // search through inventory for matches
 				{
+					if (("" + j).matches("^(" + ignore + ")$"))
+						continue;
 					ItemStack curr = ((Slot)this.inv.inventorySlots.get(j)).getStack();
 					if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
 							&& curr.getItemDamage() == meta[i]) // found the right item
 					{
 						this.click(j, true);
 						this.click(i+1, false); // move it to appropriate slot
+						ignore += "|" + j;
 						found = true;
 						break;
 					}
@@ -188,15 +256,16 @@ public class AutoInventory
 					{
 						ItemStack displayStack = new ItemStack(Item.getItemById(stored[i]));
 						displayStack.setItemDamage(meta[i]);
-						for (int k = 1; k < 5; k++)
-							this.shiftClick(k);
-						this.main.message("Insufficient material: " + displayStack.getDisplayName(), true); 
+						System.out.println("Insufficient material for " + this.output + ": " 
+								+ displayStack.getDisplayName());
+						this.sendQueue();
 						return;
 					}
 				}
 			}
 		}
 		this.shiftClick(0);
+		this.sendQueue();
 	}
 
 
@@ -217,24 +286,25 @@ public class AutoInventory
 
 	private void shiftClick(int slot)
 	{
-//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-//				slot, 0, 1, Minecraft.getMinecraft().thePlayer);
-		this.main.queueClick(new Click(this.inv.windowId, slot, 0, 1, false));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 1, false));
 	}
 
 	private void click(int slot, boolean doNext)
 	{
-//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-//				slot, 0, 0, Minecraft.getMinecraft().thePlayer);
-		this.main.queueClick(new Click(this.inv.windowId, slot, 0, 0, doNext));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 0, doNext));
 	}
 
 	private void rightClick(int slot, boolean doNext)
 	{
-//		Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-//				slot, 1, 0, Minecraft.getMinecraft().thePlayer);
-		this.main.queueClick(new Click(this.inv.windowId, slot, 1, 0, doNext));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 1, 0, doNext));
 	}
+
+	private void sendQueue()
+	{
+		this.main.queueClicks(this.toSend);
+		this.toSend.clear();
+	}
+
 
 	/* Action values (from invtweaks):
 	 * 0: Standard Click

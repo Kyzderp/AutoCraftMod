@@ -41,7 +41,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	public String getName() {return "AutoCraft";}
 
 	@Override
-	public String getVersion() {return "1.2.0";}
+	public String getVersion() {return "1.2.1";}
 
 	@Override
 	public void init(File configPath) 
@@ -49,7 +49,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 		this.settings = new CraftSettings();
 		this.maxClickCooldown = this.settings.getMaxClickCooldown();
 		this.currClickCooldown = 0;
-		this.msgcooldown = 20;
+		this.msgcooldown = 40;
 		this.sentCmd = false;
 		this.clickQueue = new LinkedList<Click>();
 	}
@@ -125,7 +125,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 				if (tokens.length == 2)
 					this.logMessage("Current crafting delay is " + this.maxClickCooldown, true);
 				else if (!tokens[2].matches("[0-9]+"))
-					this.logError("Must be an integer. Recommended 0~2");
+					this.logError("Must be an integer. Recommended 0~4");
 				else
 				{
 					this.maxClickCooldown = Integer.parseInt(tokens[2]);
@@ -166,7 +166,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	{
 		this.message = message;
 		this.isError = isError;
-		this.msgcooldown = 20;
+		this.msgcooldown = 40;
 	}
 
 	private void displayMessage(String message, boolean isError)
@@ -184,9 +184,9 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	 * Queues a click to be run later
 	 * @param click
 	 */
-	public void queueClick(Click click)
+	public void queueClicks(LinkedList<Click> queue)
 	{
-		this.clickQueue.add(click);
+		this.clickQueue.addAll(queue);
 	}
 
 	/**
