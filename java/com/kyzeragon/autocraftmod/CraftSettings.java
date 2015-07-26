@@ -12,7 +12,7 @@ import net.minecraft.util.AxisAlignedBB;
 
 public class CraftSettings 
 {
-	private final int defaultCooldown = 2;
+	private final int defaultCooldown = 4;
 	private int maxClickCooldown;
 	
 	private final File dirs = new File(Minecraft.getMinecraft().mcDataDir, "liteconfig" + File.separator 

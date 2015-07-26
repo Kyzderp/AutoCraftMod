@@ -175,7 +175,12 @@ public class AutoWorkbench
 				}
 			}
 		}
-		this.shiftClick(0);
+		if (((Slot)this.inv.inventorySlots.get(0)).getHasStack())
+		{
+			ItemStack stack = ((Slot)this.inv.inventorySlots.get(0)).getStack();
+			if (stack.getDisplayName().equals(this.output))
+				this.shiftClick(0);
+		}
 		this.sendQueue();
 	}
 
