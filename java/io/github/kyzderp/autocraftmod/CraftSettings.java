@@ -1,4 +1,4 @@
-package com.kyzeragon.autocraftmod;
+package io.github.kyzderp.autocraftmod;
 
 import java.io.File;
 import java.io.FileNotFoundException;

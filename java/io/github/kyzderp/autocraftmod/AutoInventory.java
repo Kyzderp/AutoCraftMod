@@ -1,4 +1,4 @@
-package com.kyzeragon.autocraftmod;
+package io.github.kyzderp.autocraftmod;
 
 import java.util.ArrayList;
 import java.util.Collections;

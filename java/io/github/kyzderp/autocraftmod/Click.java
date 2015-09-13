@@ -1,4 +1,4 @@
-package com.kyzeragon.autocraftmod;
+package io.github.kyzderp.autocraftmod;
 
 public class Click 
 {
