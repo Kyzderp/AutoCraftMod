@@ -39,7 +39,7 @@ public class AutoInventory
 	 */
 	public void storeCrafting()
 	{//itemtool, itemarmor, itembow, itemsword, itemhoe, shears?
-		this.inv = (ContainerPlayer) Minecraft.getMinecraft().thePlayer.inventoryContainer;
+
 		if (!((Slot)this.inv.inventorySlots.get(0)).getHasStack())
 		{ // Nothing in crafting output
 			this.main.message("Invalid crafting recipe!", true);
@@ -264,12 +264,7 @@ public class AutoInventory
 				}
 			}
 		}
-		if (((Slot)this.inv.inventorySlots.get(0)).getHasStack())
-		{
-			ItemStack stack = ((Slot)this.inv.inventorySlots.get(0)).getStack();
-			if (stack.getDisplayName().equals(this.output))
-				this.shiftClick(0);
-		}
+		this.shiftClick(0);
 		this.sendQueue();
 	}
 

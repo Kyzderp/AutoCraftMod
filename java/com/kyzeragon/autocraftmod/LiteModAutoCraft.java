@@ -41,7 +41,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	public String getName() {return "AutoCraft";}
 
 	@Override
-	public String getVersion() {return "1.2.3";}
+	public String getVersion() {return "1.2.1";}
 
 	@Override
 	public void init(File configPath) 
