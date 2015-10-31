@@ -21,6 +21,8 @@ public class AutoInventory
 	private LiteModAutoCraft main;
 	private int durabilityRepair;
 	private LinkedList<Click> toSend;
+	
+	private Simulator simulator;
 
 	public AutoInventory(LiteModAutoCraft main)
 	{
@@ -122,22 +124,22 @@ public class AutoInventory
 		Collections.sort(repairSlots, new DurabilityComparator());
 		int target = toRepair.getMaxDamage() - repairSlots.get(0).getStack().getItemDamage() 
 				+ toRepair.getMaxDamage() * 5 / 100;
-		this.click(repairSlots.get(0).slotNumber, true); // move largest damage to crafting grid
-		this.click(1, false);
+		this.click(repairSlots.get(0).slotNumber); // move largest damage to crafting grid
+		this.click(1);
 		for (int i = 1; i < repairSlots.size(); i++) // find the largest damage that can combine and make full
 		{
 			int durability = repairSlots.get(i).getStack().getItemDamage();
 			if (durability <= target)
 			{
-				this.click(repairSlots.get(i).slotNumber, true); // move to crafting grid
-				this.click(2, false);
+				this.click(repairSlots.get(i).slotNumber); // move to crafting grid
+				this.click(2);
 				this.shiftClick(0);
 				this.sendQueue();
 				return;
 			}
 		}
-		this.click(repairSlots.get(1).slotNumber, true); // otherwise, take next smallest
-		this.click(2, false);
+		this.click(repairSlots.get(1).slotNumber); // otherwise, take next smallest
+		this.click(2);
 		this.shiftClick(0);
 		this.sendQueue();
 	}
@@ -148,6 +150,124 @@ public class AutoInventory
 	private void craftNormal()
 	{
 		this.toSend.clear();
+		
+		// Put down items
+		this.depositHeld();
+		
+		// Not enough materials
+		if (!this.checkMaterials())
+			return;
+		
+		// Simulator to avoid stupid things
+		this.simulator = new Simulator(this.inv.inventorySlots, 45);
+		
+		// Do the crafting
+		String ignore = "-1";
+		for (int i = 0; i < 4; i++)
+		{
+			if (this.inv.inventorySlots.get(i+1) != null)
+			{
+				ItemStack stack = this.simulator.stackAt(i+1);
+				if (stack != null)
+				{
+					int currID = Item.getIdFromItem(stack.getItem());
+					int currMeta = stack.getItemDamage();
+					if (currID == stored[i] && currMeta == meta[i])
+						continue; // correct item in slot
+					else if (stored[i] == 0) // there's something when there shouldn't be
+					{
+						this.shiftClick(i+1);
+						continue;
+					}
+					else // wrong item
+						this.shiftClick(i+1);
+				}
+
+				if (stored[i] == 0)
+					continue;
+				if (this.simulator.stackAt(i+1) != null)
+					this.shiftClick(i+1); // empty the slot
+				boolean found = false;
+				for (int j = 9; j <= 44; j++) // search through inventory for matches
+				{
+					if (("" + j).matches("^(" + ignore + ")$"))
+						continue;
+					ItemStack curr = this.simulator.stackAt(j);
+					if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
+							&& curr.getItemDamage() == meta[i]) // found the right item
+					{
+						this.click(j);
+						this.click(i+1); // move it to appropriate slot
+						ignore += "|" + j;
+						found = true;
+						break;
+					}
+				}
+				if (!found) // can't find more in the inventory
+				{// i is the slot it should go in
+					for (int j = 1; j <=4; j++) // search the crafting matrix for extras
+					{
+						ItemStack curr = this.simulator.stackAt(j);
+						if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
+								&& curr.getItemDamage() == meta[i] && curr.stackSize > 1) // found the right item
+						{
+							this.rightClick(j);
+							this.click(i+1); // move it to appropriate slot
+							found = true;
+							break;
+						}
+					}
+					if (!found) // can't find anywhere, empty crafting matrix
+					{
+						ItemStack displayStack = new ItemStack(Item.getItemById(stored[i]));
+						displayStack.setItemDamage(meta[i]);
+//						System.out.println("Insufficient material for " + this.output + ": " 
+//								+ displayStack.getDisplayName());
+						this.sendQueue();
+						return;
+					}
+				}
+			}
+		}
+		this.shiftClick(0);
+		this.sendQueue();
+	}
+	
+	/**
+	 * Deposits held items
+	 */
+	private void depositHeld() 
+	{
+		// First go through inventory portion to find empty slot
+		for (int i = 9; i < 45; i++)
+		{
+			if (!((Slot)this.inv.inventorySlots.get(i)).getHasStack())
+			{
+				Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+						i, 0, 0, Minecraft.getMinecraft().thePlayer);
+				return;
+			}
+		}
+		
+		// If there isn't one, try the crafting grid
+		for (int i = 1; i < 5; i++)
+		{
+			if (!((Slot)this.inv.inventorySlots.get(i)).getHasStack())
+			{
+				Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
+						i, 0, 0, Minecraft.getMinecraft().thePlayer);
+				return;
+			}
+		}
+		// If there still isn't one, oh well.
+	}
+	
+	/**
+	 * Check if there are sufficient materials to craft
+	 * @return
+	 */
+	private boolean checkMaterials()
+	{
 		HashMap<String, Integer> needed = new HashMap<String, Integer>();
 		for (int i = 0; i < 4; i++)
 		{
@@ -196,76 +316,9 @@ public class AutoInventory
 			this.main.message("Insufficient material for " + this.output + ": " 
 					+ displayStack.getDisplayName(), true);
 			this.sendQueue();
-			return;
+			return false;
 		}
-		
-		String ignore = "-1";
-		for (int i = 0; i < 4; i++)
-		{
-			if (this.inv.inventorySlots.get(i+1) != null)
-			{
-				ItemStack stack = ((Slot)this.inv.inventorySlots.get(i+1)).getStack();
-				if (stack != null)
-				{
-					int currID = Item.getIdFromItem(stack.getItem());
-					int currMeta = stack.getItemDamage();
-					if (currID == stored[i] && currMeta == meta[i])
-						continue; // correct item in slot
-					else if (stored[i] == 0) // there's something when there shouldn't be
-					{
-						this.shiftClick(i+1);
-						continue;
-					}
-				}
-
-				if (stored[i] == 0)
-					continue;
-				if (((Slot)this.inv.inventorySlots.get(i+1)).getHasStack())
-					this.shiftClick(i+1); // empty the slot
-				boolean found = false;
-				for (int j = 9; j <= 44; j++) // search through inventory for matches
-				{
-					if (("" + j).matches("^(" + ignore + ")$"))
-						continue;
-					ItemStack curr = ((Slot)this.inv.inventorySlots.get(j)).getStack();
-					if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
-							&& curr.getItemDamage() == meta[i]) // found the right item
-					{
-						this.click(j, true);
-						this.click(i+1, false); // move it to appropriate slot
-						ignore += "|" + j;
-						found = true;
-						break;
-					}
-				}
-				if (!found) // can't find more in the inventory
-				{// i is the slot it should go in
-					for (int j = 1; j <=4; j++) // search the crafting matrix for extras
-					{
-						ItemStack curr = ((Slot)this.inv.inventorySlots.get(j)).getStack();
-						if (curr != null && Item.getIdFromItem(curr.getItem()) == stored[i]
-								&& curr.getItemDamage() == meta[i] && curr.stackSize > 1) // found the right item
-						{
-							this.rightClick(j, true);
-							this.click(i+1, false); // move it to appropriate slot
-							found = true;
-							break;
-						}
-					}
-					if (!found) // can't find anywhere, empty crafting matrix
-					{
-						ItemStack displayStack = new ItemStack(Item.getItemById(stored[i]));
-						displayStack.setItemDamage(meta[i]);
-						System.out.println("Insufficient material for " + this.output + ": " 
-								+ displayStack.getDisplayName());
-						this.sendQueue();
-						return;
-					}
-				}
-			}
-		}
-		this.shiftClick(0);
-		this.sendQueue();
+		return true;
 	}
 
 
@@ -286,17 +339,23 @@ public class AutoInventory
 
 	private void shiftClick(int slot)
 	{
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 1, false));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 1));
+		if (this.simulator != null)
+			this.simulator.shiftClick(slot);
 	}
 
-	private void click(int slot, boolean doNext)
+	private void click(int slot)
 	{
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 0, doNext));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 0));
+		if (this.simulator != null)
+			this.simulator.leftClick(slot);
 	}
 
-	private void rightClick(int slot, boolean doNext)
+	private void rightClick(int slot)
 	{
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 1, 0, doNext));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 1, 0));
+		if (this.simulator != null)
+			this.simulator.rightClick(slot);
 	}
 
 	private void sendQueue()

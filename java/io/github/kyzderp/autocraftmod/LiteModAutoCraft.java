@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.inventory.GuiCrafting;
 import net.minecraft.client.gui.inventory.GuiInventory;
+import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.network.INetHandler;
 import net.minecraft.network.play.client.C01PacketChatMessage;
 import net.minecraft.network.play.server.S01PacketJoinGame;
@@ -18,12 +19,14 @@ import net.minecraft.util.IChatComponent;
 
 import org.lwjgl.input.Keyboard;
 
+import com.mojang.realmsclient.dto.RealmsServer;
 import com.mumfrey.liteloader.ChatFilter;
 import com.mumfrey.liteloader.JoinGameListener;
+import com.mumfrey.liteloader.OutboundChatFilter;
 import com.mumfrey.liteloader.OutboundChatListener;
 import com.mumfrey.liteloader.Tickable;
 
-public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundChatListener, ChatFilter
+public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundChatFilter
 {
 	private AutoInventory autoInv;
 	private AutoWorkbench autoBench;
@@ -32,7 +35,6 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	private int msgcooldown;
 	private String message;
 	private boolean isError;
-	private boolean sentCmd;
 	private LinkedList<Click> clickQueue;
 	private int currClickCooldown;
 	private int maxClickCooldown;
@@ -41,7 +43,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	public String getName() {return "AutoCraft";}
 
 	@Override
-	public String getVersion() {return "1.2.1";}
+	public String getVersion() {return "1.3.0";}
 
 	@Override
 	public void init(File configPath) 
@@ -50,7 +52,6 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 		this.maxClickCooldown = this.settings.getMaxClickCooldown();
 		this.currClickCooldown = 0;
 		this.msgcooldown = 40;
-		this.sentCmd = false;
 		this.clickQueue = new LinkedList<Click>();
 	}
 
@@ -72,15 +73,28 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 		while (!this.clickQueue.isEmpty() && this.currClickCooldown == 0)
 		{
 			Click currClick = this.clickQueue.pop();
+			
+			String thing = "";
+			if (currClick.getAction() == 0)
+			{
+				if (currClick.getData() == 0)
+					thing = "left Click";
+				else
+					thing = "right click";
+			}
+			
 			Minecraft.getMinecraft().playerController.windowClick(currClick.getWindowID(),
 					currClick.getSlot(), currClick.getData(), currClick.getAction(), 
 					Minecraft.getMinecraft().thePlayer);
-			if (!currClick.getDoNext())
-				this.currClickCooldown = this.maxClickCooldown;
+
+			this.currClickCooldown = this.maxClickCooldown;
+			// For right clicks to not mess up
+			if (this.maxClickCooldown < 2 && currClick.getData() == 1
+					&& currClick.getAction() == 0)
+				this.currClickCooldown = 2;
 		}
 		if (this.currClickCooldown > 0)
 			this.currClickCooldown--;
-		
 		if (minecraft.thePlayer.openContainer != null
 				&& minecraft.currentScreen instanceof GuiInventory)
 		{
@@ -108,19 +122,17 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	}
 
 	@Override
-	public void onSendChatMessage(C01PacketChatMessage packet, String message) 
+	public boolean onSendChatMessage(String message) 
 	{
 		String[] tokens = message.split(" ");
 		if (tokens[0].equalsIgnoreCase("/autocraft"))
 		{
-			this.sentCmd = true;
 			if (tokens.length == 1)
 			{
 				this.logMessage("§2" + this.getName() + " §8[§2v" + this.getVersion() + "§8] §aby Kyzeragon", false);
 				this.logMessage("Type §2/autocraft help §afor commands.", false);
-				return;
 			}
-			if (tokens[1].equalsIgnoreCase("delay"))
+			else if (tokens[1].equalsIgnoreCase("delay"))
 			{
 				if (tokens.length == 2)
 					this.logMessage("Current crafting delay is " + this.maxClickCooldown, true);
@@ -141,22 +153,19 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 				for (String command: commands)
 					this.logMessage("/autocraft " + command, false);
 			}
-		}
-	}
-
-	@Override
-	public boolean onChat(S02PacketChat chatPacket, IChatComponent chat, String message) 
-	{
-		if (message.matches(".*nknown.*ommand.*") && this.sentCmd)
-		{
-			this.sentCmd = false;
+			else
+			{
+				this.logMessage("§2" + this.getName() + " §8[§2v" + this.getVersion() + "§8] §aby Kyzeragon", false);
+				this.logMessage("Type §2/autocraft help §afor commands.", false);
+			}
 			return false;
 		}
 		return true;
 	}
 
 	@Override
-	public void onJoinGame(INetHandler netHandler, S01PacketJoinGame joinGamePacket) 
+	public void onJoinGame(INetHandler netHandler, S01PacketJoinGame joinGamePacket, 
+			ServerData serverData, RealmsServer realmsServer) 
 	{
 		this.autoInv = new AutoInventory(this);
 		this.autoBench = new AutoWorkbench(this);
@@ -174,7 +183,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 		int color = 0xFF5555;
 		if (!isError)
 			color = 0x55FF55;
-		FontRenderer fontRender = Minecraft.getMinecraft().fontRenderer;
+		FontRenderer fontRender = Minecraft.getMinecraft().fontRendererObj;
 		fontRender.drawStringWithShadow(message, 
 				Minecraft.getMinecraft().displayWidth/4 - fontRender.getStringWidth(message)/2, 
 				Minecraft.getMinecraft().displayHeight/4 - 100, color);

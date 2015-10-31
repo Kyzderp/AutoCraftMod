@@ -16,7 +16,7 @@ public class CraftSettings
 	private int maxClickCooldown;
 	
 	private final File dirs = new File(Minecraft.getMinecraft().mcDataDir, "liteconfig" + File.separator 
-			+ "config.1.7.2" + File.separator + "AutoCraft");
+			+ "config.1.8" + File.separator + "AutoCraft");
 	private final File path = new File(dirs.getPath() + File.separator + "autocraftconfig.txt");
 
 	
