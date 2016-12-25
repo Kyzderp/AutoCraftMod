@@ -8,22 +8,18 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.inventory.GuiCrafting;
 import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.inventory.ClickType;
 import net.minecraft.network.INetHandler;
-import net.minecraft.network.play.client.C01PacketChatMessage;
-import net.minecraft.network.play.server.S01PacketJoinGame;
-import net.minecraft.network.play.server.S02PacketChat;
-import net.minecraft.util.ChatComponentText;
-import net.minecraft.util.ChatStyle;
-import net.minecraft.util.EnumChatFormatting;
-import net.minecraft.util.IChatComponent;
+import net.minecraft.network.play.server.SPacketJoinGame;
+import net.minecraft.util.text.Style;
+import net.minecraft.util.text.TextComponentString;
+import net.minecraft.util.text.TextFormatting;
 
 import org.lwjgl.input.Keyboard;
 
 import com.mojang.realmsclient.dto.RealmsServer;
-import com.mumfrey.liteloader.ChatFilter;
 import com.mumfrey.liteloader.JoinGameListener;
 import com.mumfrey.liteloader.OutboundChatFilter;
-import com.mumfrey.liteloader.OutboundChatListener;
 import com.mumfrey.liteloader.Tickable;
 
 public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundChatFilter
@@ -43,7 +39,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	public String getName() {return "AutoCraft";}
 
 	@Override
-	public String getVersion() {return "1.3.0";}
+	public String getVersion() {return "1.4.0";}
 
 	@Override
 	public void init(File configPath) 
@@ -74,14 +70,14 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 		{
 			Click currClick = this.clickQueue.pop();
 			
-			String thing = "";
+			/*String thing = "";
 			if (currClick.getAction() == 0)
 			{
 				if (currClick.getData() == 0)
 					thing = "left Click";
 				else
 					thing = "right click";
-			}
+			}*/
 			
 			Minecraft.getMinecraft().playerController.windowClick(currClick.getWindowID(),
 					currClick.getSlot(), currClick.getData(), currClick.getAction(), 
@@ -90,7 +86,7 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 			this.currClickCooldown = this.maxClickCooldown;
 			// For right clicks to not mess up
 			if (this.maxClickCooldown < 2 && currClick.getData() == 1
-					&& currClick.getAction() == 0)
+					&& currClick.getAction() == ClickType.PICKUP)
 				this.currClickCooldown = 2;
 		}
 		if (this.currClickCooldown > 0)
@@ -129,34 +125,34 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 		{
 			if (tokens.length == 1)
 			{
-				this.logMessage("§2" + this.getName() + " §8[§2v" + this.getVersion() + "§8] §aby Kyzeragon", false);
-				this.logMessage("Type §2/autocraft help §afor commands.", false);
+				LiteModAutoCraft.logMessage("\u00A72" + this.getName() + " \u00A78[\u00A72v" + this.getVersion() + "\u00A78] \u00A7aby Kyzeragon", false);
+				LiteModAutoCraft.logMessage("Type \u00A72/autocraft help \u00A7afor commands.", false);
 			}
 			else if (tokens[1].equalsIgnoreCase("delay"))
 			{
 				if (tokens.length == 2)
-					this.logMessage("Current crafting delay is " + this.maxClickCooldown, true);
+					LiteModAutoCraft.logMessage("Current crafting delay is " + this.maxClickCooldown, true);
 				else if (!tokens[2].matches("[0-9]+"))
-					this.logError("Must be an integer. Recommended 0~4");
+					LiteModAutoCraft.logError("Must be an integer. Recommended 0~4");
 				else
 				{
 					this.maxClickCooldown = Integer.parseInt(tokens[2]);
 					this.settings.setMaxClickCooldown(this.maxClickCooldown);
-					this.logMessage("Crafting delay set to " + this.maxClickCooldown, true);
+					LiteModAutoCraft.logMessage("Crafting delay set to " + this.maxClickCooldown, true);
 				}
 			}
 			else if (tokens[1].equalsIgnoreCase("help"))
 			{
 				String[] commands = {"delay <number> - Sets the delay (in ticks) for craft clicking",
 						"help - Displays this help message"};
-				this.logMessage("§2" + this.getName() + " §8[§2v" + this.getVersion() + "§8] §acommands:", false);
+				LiteModAutoCraft.logMessage("\u00A72" + this.getName() + " \u00A78[\u00A72v" + this.getVersion() + "\u00A78] \u00A7acommands:", false);
 				for (String command: commands)
-					this.logMessage("/autocraft " + command, false);
+					LiteModAutoCraft.logMessage("/autocraft " + command, false);
 			}
 			else
 			{
-				this.logMessage("§2" + this.getName() + " §8[§2v" + this.getVersion() + "§8] §aby Kyzeragon", false);
-				this.logMessage("Type §2/autocraft help §afor commands.", false);
+				LiteModAutoCraft.logMessage("\u00A72" + this.getName() + " \u00A78[\u00A72v" + this.getVersion() + "\u00A78] \u00A7aby Kyzeragon", false);
+				LiteModAutoCraft.logMessage("Type \u00A72/autocraft help \u00A7afor commands.", false);
 			}
 			return false;
 		}
@@ -164,8 +160,9 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	}
 
 	@Override
-	public void onJoinGame(INetHandler netHandler, S01PacketJoinGame joinGamePacket, 
-			ServerData serverData, RealmsServer realmsServer) 
+	public void onJoinGame(INetHandler netHandler,
+			SPacketJoinGame joinGamePacket, ServerData serverData,
+			RealmsServer realmsServer) 
 	{
 		this.autoInv = new AutoInventory(this);
 		this.autoBench = new AutoWorkbench(this);
@@ -204,11 +201,11 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	 * @param addPrefix Whether to add the mod-specific prefix or not
 	 */
 	public static void logMessage(String message, boolean addPrefix)
-	{// "§8[§2§8] §a"
+	{// "\u00A78[\u00A72\u00A78] \u00A7a"
 		if (addPrefix)
-			message = "§8[§2AutoCraft§8] §a" + message;
-		ChatComponentText displayMessage = new ChatComponentText(message);
-		displayMessage.setChatStyle((new ChatStyle()).setColor(EnumChatFormatting.GREEN));
+			message = "\u00A78[\u00A72AutoCraft\u00A78] \u00A7a" + message;
+		TextComponentString displayMessage = new TextComponentString(message);
+		displayMessage.setStyle((new Style()).setColor(TextFormatting.GREEN));
 		Minecraft.getMinecraft().thePlayer.addChatComponentMessage(displayMessage);
 	}
 
@@ -218,8 +215,8 @@ public class LiteModAutoCraft implements Tickable, JoinGameListener, OutboundCha
 	 */
 	public static void logError(String message)
 	{
-		ChatComponentText displayMessage = new ChatComponentText("§8[§4!§8] §c" + message + " §8[§4!§8]");
-		displayMessage.setChatStyle((new ChatStyle()).setColor(EnumChatFormatting.RED));
+		TextComponentString displayMessage = new TextComponentString("\u00A78[\u00A74!\u00A78] \u00A7c" + message + " \u00A78[\u00A74!\u00A78]");
+		displayMessage.setStyle((new Style()).setColor(TextFormatting.RED));
 		Minecraft.getMinecraft().thePlayer.addChatComponentMessage(displayMessage);
 	}
 }

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.inventory.ClickType;
 import net.minecraft.inventory.ContainerPlayer;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
@@ -244,7 +245,7 @@ public class AutoInventory
 			if (!((Slot)this.inv.inventorySlots.get(i)).getHasStack())
 			{
 				Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-						i, 0, 0, Minecraft.getMinecraft().thePlayer);
+						i, 0, ClickType.PICKUP, Minecraft.getMinecraft().thePlayer);
 				return;
 			}
 		}
@@ -255,7 +256,7 @@ public class AutoInventory
 			if (!((Slot)this.inv.inventorySlots.get(i)).getHasStack())
 			{
 				Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-						i, 0, 0, Minecraft.getMinecraft().thePlayer);
+						i, 0, ClickType.PICKUP, Minecraft.getMinecraft().thePlayer);
 				return;
 			}
 		}
@@ -322,13 +323,13 @@ public class AutoInventory
 	}
 
 
-	class DurabilityComparator implements Comparator
+	class DurabilityComparator implements Comparator<Slot>
 	{
 		@Override
-		public int compare(Object arg0, Object arg1) 
+		public int compare(Slot arg0, Slot arg1) 
 		{
-			int dmg1 = ((Slot)arg0).getStack().getItemDamage();
-			int dmg2 = ((Slot)arg1).getStack().getItemDamage();
+			int dmg1 = arg0.getStack().getItemDamage();
+			int dmg2 = arg1.getStack().getItemDamage();
 			if (dmg1 > dmg2)
 				return -1;
 			if (dmg1 == dmg2)
@@ -339,21 +340,21 @@ public class AutoInventory
 
 	private void shiftClick(int slot)
 	{
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 1));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, ClickType.QUICK_MOVE));
 		if (this.simulator != null)
 			this.simulator.shiftClick(slot);
 	}
 
 	private void click(int slot)
 	{
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 0));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, ClickType.PICKUP));
 		if (this.simulator != null)
 			this.simulator.leftClick(slot);
 	}
 
 	private void rightClick(int slot)
 	{
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 1, 0));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 1, ClickType.PICKUP));
 		if (this.simulator != null)
 			this.simulator.rightClick(slot);
 	}

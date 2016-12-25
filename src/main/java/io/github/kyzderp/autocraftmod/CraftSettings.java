@@ -5,10 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
-import com.mumfrey.liteloader.util.log.LiteLoaderLogger;
-
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.AxisAlignedBB;
+
+import com.mumfrey.liteloader.util.log.LiteLoaderLogger;
 
 public class CraftSettings 
 {

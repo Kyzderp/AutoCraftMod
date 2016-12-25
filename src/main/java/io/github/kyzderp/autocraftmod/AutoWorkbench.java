@@ -4,11 +4,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.inventory.ClickType;
 import net.minecraft.inventory.ContainerWorkbench;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.BlockPos;
 
 public class AutoWorkbench 
 {
@@ -159,7 +159,7 @@ public class AutoWorkbench
 			if (!((Slot)this.inv.inventorySlots.get(i)).getHasStack())
 			{
 				Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-						i, 0, 0, Minecraft.getMinecraft().thePlayer);
+						i, 0, ClickType.PICKUP, Minecraft.getMinecraft().thePlayer);
 				return;
 			}
 		}
@@ -170,7 +170,7 @@ public class AutoWorkbench
 			if (!((Slot)this.inv.inventorySlots.get(i)).getHasStack())
 			{
 				Minecraft.getMinecraft().playerController.windowClick(this.inv.windowId,
-						i, 0, 0, Minecraft.getMinecraft().thePlayer);
+						i, 0, ClickType.PICKUP, Minecraft.getMinecraft().thePlayer);
 				return;
 			}
 		}
@@ -238,21 +238,21 @@ public class AutoWorkbench
 	private void shiftClick(int slot)
 	{
 //		System.out.println("shift click slot " + slot);
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 1));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, ClickType.QUICK_MOVE));
 		this.simulator.shiftClick(slot);
 	}
 
 	private void click(int slot)
 	{
 //		System.out.println("left click slot " + slot);
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, 0));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 0, ClickType.PICKUP));
 		this.simulator.leftClick(slot);
 	}
 
 	private void rightClick(int slot)
 	{
 //		System.out.println("right click slot " + slot);
-		this.toSend.addLast(new Click(this.inv.windowId, slot, 1, 0));
+		this.toSend.addLast(new Click(this.inv.windowId, slot, 1, ClickType.PICKUP));
 		this.simulator.rightClick(slot);
 	}
 
